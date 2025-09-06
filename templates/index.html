@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Major League Beerio Kart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- jQuery (needed for DataTables) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- DataTables CSS + JS -->
+  <link rel="stylesheet" 
+        href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      grid-column: 1 / -1; /* Make title span both columns */
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* Two equal columns */
+      gap: 20px;
+    }
+
+    .card {
+      border: 2px solid #ccc;
+      padding: 10px;
+      border-radius: 10px;
+      background: #f9f9f9;
+      text-align: center;
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+      width: 400px !important;
+      height: 200px !important;
+    }
+  </style>
+</head>
+<body>
+  <h1>MLBK</h1>
+
+  <div class="dashboard">
+    <div class="card">
+      <h2>Elo</h2>
+      <canvas id="chart1" width="400" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Total Points</h2>
+      <canvas id="chart3" width="400" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Penalty Shots</h2>
+      <canvas id="chart4" width="400" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Gallons of Beer Drank</h2>
+      <div id="infoBox" style="font-size: 50px;"></div>
+    </div>
+    <div class="card">
+      <h2>Time Trial Table</h2>
+      <div id="times-table"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const response = await fetch("/data");
+      const result = await response.json();
+      console.log("Fetched:", result);
+
+      Object.keys(result).forEach((key) => {
+        const entry = result[key];
+
+        if (entry.type === "chart") {
+          const ctx = document.getElementById(key).getContext("2d");
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: entry.labels,
+              datasets: entry.datasets
+            },
+            options: { 
+              responsive: true, // ✅ prevents resizing loops
+              animation: false,  // ✅ reduces CPU load
+              scales: { y: { beginAtZero: true } }
+            }
+          });
+        } else if (entry.type === "text") {
+          const box = document.getElementById("infoBox");
+          box.innerHTML = "<pre>" + JSON.stringify(entry.data, null, 2) + "</pre>";
+        }
+      });
+    }
+
+    loadData();
+  </script>
+  <script>
+  fetch("/data")
+    .then(res => res.json())
+    .then(data => {
+      // Inject HTML table from Flask
+      document.getElementById("times-table").innerHTML = data.table.html;
+
+      // Activate DataTables on the generated table
+      $(document).ready(function() {
+          $('#times-table table').DataTable();  // finds the <table> inside #times-table
+      });
+    });
+  </script>
+</body>
+</html>
